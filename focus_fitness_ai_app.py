@@ -1,6 +1,7 @@
+
 import streamlit as st
 import os
-import openai
+from openai import OpenAI
 import PyPDF2
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from pathlib import Path
 st.set_page_config(page_title="Focus Fusion GPT Assistant", layout="wide")
 
 # --- LOAD API KEY ---
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # --- FILE PATHS ---
 data_dir = Path("data")
@@ -32,7 +33,7 @@ def extract_text_from_pdf(file_path):
 # --- GPT CALL ---
 def ask_openai(prompt):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are Lauren, a highly experienced personal trainer and rehab coach. Use the manuals provided to answer user questions in a friendly, expert tone."},
