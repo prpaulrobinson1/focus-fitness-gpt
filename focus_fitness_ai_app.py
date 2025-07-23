@@ -1,4 +1,3 @@
-
 import streamlit as st
 import os
 import openai
@@ -23,11 +22,12 @@ document_files = {
 
 # --- TEXT EXTRACTION ---
 def extract_text_from_pdf(file_path):
-    with open(file_path, 'rb') as f:
-        reader = PyPDF2.PdfReader(f)
-        return "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
-
-manual_texts = {name: extract_text_from_pdf(path) for name, path in document_files.items()}
+    try:
+        with open(file_path, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            return "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
+    except Exception as e:
+        return f"[Error reading {file_path.name}: {e}]"
 
 # --- GPT CALL ---
 def ask_openai(prompt):
@@ -56,7 +56,7 @@ with tabs[0]:
     st.header("🧘 Lauren's Personal Advice")
     question = st.text_area("Ask about injury, rehab, behaviour change, motivation, or lifestyle coaching:")
     if st.button("Get Advice", key="avatar") and question:
-        context = manual_texts["Lauren Avatar"] + "\n" + manual_texts["Lauren CV"]
+        context = extract_text_from_pdf(document_files["Lauren Avatar"]) + "\n" + extract_text_from_pdf(document_files["Lauren CV"])
         prompt = f"Use the following documents to answer the question:\n{context}\n\nQuestion: {question}"
         response = ask_openai(prompt)
         st.markdown(response)
@@ -66,7 +66,7 @@ with tabs[1]:
     st.header("📖 Level 2 & 3 Manual Support")
     manual_q = st.text_input("Ask a technical or exam-style question:")
     if st.button("Search Manuals", key="manual") and manual_q:
-        context = manual_texts["Level 2 Manual"] + "\n" + manual_texts["Level 3 Manual"]
+        context = extract_text_from_pdf(document_files["Level 2 Manual"]) + "\n" + extract_text_from_pdf(document_files["Level 3 Manual"])
         prompt = f"Based on the L2 and L3 fitness manuals, answer this question clearly:\n{context}\n\nQuestion: {manual_q}"
         response = ask_openai(prompt)
         st.markdown(response)
@@ -79,8 +79,8 @@ with tabs[2]:
     weeks = st.slider("Weeks to reach goal", 4, 52, 16)
     activity = st.selectbox("Activity Level", ["Sedentary", "Lightly Active", "Moderately Active"])
 
-    bmr = 10 * weight + 6.25 * 170 - 5 * 40 - 161
-    tdee = {"Sedentary": 1600, "Lightly Active": 1850, "Moderately Active": 2050}[activity]
+    tdee_values = {"Sedentary": 1600, "Lightly Active": 1850, "Moderately Active": 2050}
+    tdee = tdee_values.get(activity, 1850)
     deficit = 375
     intake = tdee - deficit
 
@@ -96,7 +96,7 @@ with tabs[2]:
 # --- TAB 4: About Lauren ---
 with tabs[3]:
     st.header("📋 About Lauren Yates")
-    st.markdown(manual_texts["Lauren Avatar"][:3000])
+    st.markdown(extract_text_from_pdf(document_files["Lauren Avatar"])[:3000])
     st.markdown("---")
     st.markdown("Want to become a PT like Lauren? Ask about our training pathways and mentorships.")
 
