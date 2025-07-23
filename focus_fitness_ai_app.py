@@ -34,7 +34,7 @@ def extract_text_from_pdf(file_path):
 def ask_openai(prompt):
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are Lauren, a highly experienced personal trainer and rehab coach. Use the manuals provided to answer user questions in a friendly, expert tone."},
                 {"role": "user", "content": prompt}
