@@ -30,11 +30,21 @@ def extract_text_from_pdf(file_path):
     except Exception as e:
         return f"[Error reading {file_path.name}: {e}]"
 
+# --- CACHED MANUAL TEXTS ---
+@st.cache_data(show_spinner=True)
+def load_manual_texts():
+    return {
+        name: extract_text_from_pdf(path)
+        for name, path in document_files.items()
+    }
+
+manual_texts = load_manual_texts()
+
 # --- GPT CALL ---
 def ask_openai(prompt):
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are Lauren, a highly experienced personal trainer and rehab coach. Use the manuals provided to answer user questions in a friendly, expert tone."},
                 {"role": "user", "content": prompt}
@@ -45,9 +55,29 @@ def ask_openai(prompt):
     except Exception as e:
         return f"Error contacting OpenAI: {str(e)}"
 
+# --- SEARCH MANUALS ---
+def search_manuals(query):
+    import difflib
+    matches = []
+    for name in ["Level 2 Manual", "Level 3 Manual"]:
+        pages = manual_texts[name].split("\n\n")  # basic chunking
+        for section in pages:
+            ratio = difflib.SequenceMatcher(None, query.lower(), section.lower()).ratio()
+            if ratio > 0.2:  # match threshold
+                matches.append((ratio, section))
+    matches.sort(reverse=True)
+    top_sections = [match[1] for match in matches[:5]]
+    return "\n".join(top_sections)
+
 # --- APP TITLE ---
 st.title("🏋️ Welcome to your Focus Fusion GPT assistant!")
 st.markdown("Hi, this is Lauren's Avatar, I am here to help. Who am I speaking to today?")
+
+st.info("""
+**What’s the difference between the tabs?**
+- **Lauren Avatar Advice** gives you coaching, injury rehab, behaviour change and motivational support — using Lauren's voice and experience.
+- **Manual Q&A** is for technical or exam-style questions from the Level 2 & 3 fitness manuals.
+""")
 
 # --- TABS ---
 tabs = st.tabs(["Lauren Avatar Advice", "Manual Q&A", "Calorie & Macro Calculator", "About Lauren"])
@@ -57,7 +87,7 @@ with tabs[0]:
     st.header("🧘 Lauren's Personal Advice")
     question = st.text_area("Ask about injury, rehab, behaviour change, motivation, or lifestyle coaching:")
     if st.button("Get Advice", key="avatar") and question:
-        context = extract_text_from_pdf(document_files["Lauren Avatar"]) + "\n" + extract_text_from_pdf(document_files["Lauren CV"])
+        context = manual_texts["Lauren Avatar"] + "\n" + manual_texts["Lauren CV"]
         prompt = f"Use the following documents to answer the question:\n{context}\n\nQuestion: {question}"
         response = ask_openai(prompt)
         st.markdown(response)
@@ -67,7 +97,7 @@ with tabs[1]:
     st.header("📖 Level 2 & 3 Manual Support")
     manual_q = st.text_input("Ask a technical or exam-style question:")
     if st.button("Search Manuals", key="manual") and manual_q:
-        context = extract_text_from_pdf(document_files["Level 2 Manual"]) + "\n" + extract_text_from_pdf(document_files["Level 3 Manual"])
+        context = search_manuals(manual_q)
         prompt = f"Based on the L2 and L3 fitness manuals, answer this question clearly:\n{context}\n\nQuestion: {manual_q}"
         response = ask_openai(prompt)
         st.markdown(response)
@@ -97,7 +127,7 @@ with tabs[2]:
 # --- TAB 4: About Lauren ---
 with tabs[3]:
     st.header("📋 About Lauren Yates")
-    st.markdown(extract_text_from_pdf(document_files["Lauren Avatar"])[:3000])
+    st.markdown(manual_texts["Lauren Avatar"][:3000])
     st.markdown("---")
     st.markdown("Want to become a PT like Lauren? Ask about our training pathways and mentorships.")
 
