@@ -6,12 +6,12 @@ import time
 # Page config
 st.set_page_config(page_title="Lauren's Virtual Coach", layout="centered")
 
-# OpenAI client
+# Set up OpenAI client
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.title("🏋️ Lauren’s Virtual Fitness Coach")
 
-# Enhanced system prompt
+# Lauren's system prompt
 system_prompt = """
 You are Lauren’s Avatar, a no-nonsense, experienced online fitness coach.
 
@@ -28,44 +28,39 @@ You know Lauren’s background includes rehab coaching, older adult training, an
 # Session state
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": system_prompt}]
-if "last_user_input" not in st.session_state:
-    st.session_state.last_user_input = ""
 
-# Chat input
-user_input = st.text_input("Ask me anything about training, nutrition, injuries, or recovery:", value="", key="chat_input")
+# Input form
+with st.form("chat_form", clear_on_submit=True):
+    user_input = st.text_input("Ask me anything about training, nutrition, injuries, or recovery:", key="chat_input")
+    submitted = st.form_submit_button("Send")
 
-if user_input:
+# Process message
+if submitted and user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
-    st.session_state.last_user_input = user_input
 
     try:
         with st.spinner("Thinking like Lauren..."):
-            # Limit history to last 12 messages + system
-            recent_messages = [st.session_state.messages[0]] + st.session_state.messages[-12:]
-
-            start_time = time.time()
+            start = time.time()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=recent_messages,
-                temperature=0.7
+                messages=st.session_state.messages[-12:],  # last 12 plus system
+                temperature=0.7,
+                timeout=30  # hard timeout
             )
-            duration = time.time() - start_time
-
-            if duration > 20:
-                st.warning("This took longer than expected — response may be delayed during peak hours.")
+            elapsed = time.time() - start
+            if elapsed > 20:
+                st.warning("⏳ That took a while — things may be slow at the moment.")
 
             reply = response.choices[0].message.content
             st.session_state.messages.append({"role": "assistant", "content": reply})
-            st.rerun()
 
     except Exception as e:
-        st.error(f"Error: {e}")
-        st.stop()
+        st.session_state.messages.append({"role": "assistant", "content": f"⚠️ Error: {str(e)}"})
 
-# Display chat (newest at top)
+# Display conversation
 if len(st.session_state.messages) > 1:
     st.markdown("### 💬 Conversation")
-    for m in reversed(st.session_state.messages[1:]):
+    for m in reversed(st.session_state.messages[1:]):  # skip system
         if m["role"] == "user":
             st.markdown(f"**You:** {m['content']}")
         elif m["role"] == "assistant":
