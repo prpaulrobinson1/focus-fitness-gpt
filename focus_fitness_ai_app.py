@@ -35,7 +35,7 @@ user_input = st.text_input("Ask me anything about training, nutrition, injuries,
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
-    st.session_state.last_user_input = user_input  # Store so we can clear later
+    st.session_state.last_user_input = user_input
 
     try:
         with st.spinner("Thinking like Lauren..."):
@@ -46,16 +46,16 @@ if user_input:
             )
         reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": reply})
-        st.experimental_rerun()  # Forces refresh with input cleared
+        st.rerun()
 
     except Exception as e:
         st.error(f"Error: {e}")
         st.stop()
 
-# Display chat (latest message at top)
+# Display chat (newest at top)
 if len(st.session_state.messages) > 1:
     st.markdown("### 💬 Conversation")
-    for m in reversed(st.session_state.messages[1:]):  # skip system message
+    for m in reversed(st.session_state.messages[1:]):  # Skip system message
         if m["role"] == "user":
             st.markdown(f"**You:** {m['content']}")
         elif m["role"] == "assistant":
