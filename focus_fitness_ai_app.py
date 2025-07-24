@@ -40,20 +40,23 @@ if user_input:
 
     try:
         with st.spinner("Thinking like Lauren..."):
-            # Limit history to last 12 user+assistant messages plus system
-            trimmed_messages = [st.session_state.messages[0]] + st.session_state.messages[-24:]
+            # Limit history to last 12 messages + system
+            recent_messages = [st.session_state.messages[0]] + st.session_state.messages[-12:]
+
             start_time = time.time()
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=trimmed_messages,
+                messages=recent_messages,
                 temperature=0.7
             )
-            elapsed = time.time() - start_time
-            if elapsed > 20:
-                st.warning("That took a bit longer than usual — GPT may be busy.")
-        reply = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": reply})
-        st.rerun()
+            duration = time.time() - start_time
+
+            if duration > 20:
+                st.warning("This took longer than expected — response may be delayed during peak hours.")
+
+            reply = response.choices[0].message.content
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.rerun()
 
     except Exception as e:
         st.error(f"Error: {e}")
@@ -62,7 +65,7 @@ if user_input:
 # Display chat (newest at top)
 if len(st.session_state.messages) > 1:
     st.markdown("### 💬 Conversation")
-    for m in reversed(st.session_state.messages[1:]):  # Skip system message
+    for m in reversed(st.session_state.messages[1:]):
         if m["role"] == "user":
             st.markdown(f"**You:** {m['content']}")
         elif m["role"] == "assistant":
