@@ -1,136 +1,99 @@
 
 import streamlit as st
-import os
-from openai import OpenAI
-import PyPDF2
-from pathlib import Path
 
-# --- CONFIG ---
-st.set_page_config(page_title="Focus Fusion GPT Assistant", layout="wide")
+st.set_page_config(page_title="Focus Fitness AI", layout="centered")
 
-# --- LOAD API KEY ---
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Title
+st.title("🏋️ Focus Fitness AI Study Assistant")
+st.markdown("""
+Welcome to your interactive study tool! Use this app to revise key topics and receive guidance aligned with Lauren Yates' coaching philosophy.
 
-# --- FILE PATHS ---
-data_dir = Path("data")
-document_files = {
-    "Level 2 Manual": data_dir / "Q2CGI MANUAL AIQ005803 EMAIL - Copy.pdf",
-    "Level 3 Manual": data_dir / "Q3EXPT MANUAL AIQ005667 EMAIL - Copy.pdf",
-    "Lauren Avatar": data_dir / "Lauren Avatar.pdf",
-    "Lauren CV": data_dir / "Lauren Yates CV 2025 pdf.pdf",
-    "Calorie Macro": data_dir / "Calorie and Macro Calculator.pdf"
-}
-
-# --- TEXT EXTRACTION ---
-def extract_text_from_pdf(file_path):
-    try:
-        with open(file_path, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
-            return "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
-    except Exception as e:
-        return f"[Error reading {file_path.name}: {e}]"
-
-# --- CACHED MANUAL TEXTS ---
-@st.cache_data(show_spinner=True)
-def load_manual_texts():
-    return {
-        name: extract_text_from_pdf(path)
-        for name, path in document_files.items()
-    }
-
-manual_texts = load_manual_texts()
-
-# --- GPT CALL ---
-def ask_openai(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are Lauren, a highly experienced personal trainer and rehab coach. Use the manuals provided to answer user questions in a friendly, expert tone."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.6
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Error contacting OpenAI: {str(e)}"
-
-# --- SEARCH MANUALS ---
-def search_manuals(query):
-    import difflib
-    matches = []
-    for name in ["Level 2 Manual", "Level 3 Manual"]:
-        pages = manual_texts[name].split("\n\n")  # basic chunking
-        for section in pages:
-            ratio = difflib.SequenceMatcher(None, query.lower(), section.lower()).ratio()
-            if ratio > 0.2:  # match threshold
-                matches.append((ratio, section))
-    matches.sort(reverse=True)
-    top_sections = [match[1] for match in matches[:5]]
-    return "\n".join(top_sections)
-
-# --- APP TITLE ---
-st.title("🏋️ Welcome to your Focus Fusion GPT assistant!")
-st.markdown("Hi, this is Lauren's Avatar, I am here to help. Who am I speaking to today?")
-
-st.info("""
-**What’s the difference between the tabs?**
-- **Lauren Avatar Advice** gives you coaching, injury rehab, behaviour change and motivational support — using Lauren's voice and experience.
-- **Manual Q&A** is for technical or exam-style questions from the Level 2 & 3 fitness manuals.
+Use the dropdown menu below to choose a topic.
 """)
 
-# --- TABS ---
-tabs = st.tabs(["Lauren Avatar Advice", "Manual Q&A", "Calorie & Macro Calculator", "About Lauren"])
+# Menu
+topic = st.selectbox("📚 Select a topic", [
+    "Anatomy & Physiology",
+    "Exercise Technique & Safety",
+    "Client Consultations",
+    "Training Program Design",
+    "Calorie & Macro Calculator",
+    "Lauren’s Coaching Style",
+    "About"
+])
 
-# --- TAB 1: Lauren Avatar Advice ---
-with tabs[0]:
-    st.header("🧘 Lauren's Personal Advice")
-    question = st.text_area("Ask about injury, rehab, behaviour change, motivation, or lifestyle coaching:")
-    if st.button("Get Advice", key="avatar") and question:
-        context = manual_texts["Lauren Avatar"] + "\n" + manual_texts["Lauren CV"]
-        prompt = f"Use the following documents to answer the question:\n{context}\n\nQuestion: {question}"
-        response = ask_openai(prompt)
-        st.markdown(response)
+# Content
+if topic == "Anatomy & Physiology":
+    st.subheader("🧠 Anatomy & Physiology")
+    st.markdown("""
+- Identify types of bones and their functions
+- Understand the muscular, skeletal, and nervous systems
+- Cardiovascular and respiratory basics
+- Energy systems and their role in exercise
+""")
 
-# --- TAB 2: Manual Q&A ---
-with tabs[1]:
-    st.header("📖 Level 2 & 3 Manual Support")
-    manual_q = st.text_input("Ask a technical or exam-style question:")
-    if st.button("Search Manuals", key="manual") and manual_q:
-        context = search_manuals(manual_q)
-        prompt = f"Based on the L2 and L3 fitness manuals, answer this question clearly:\n{context}\n\nQuestion: {manual_q}"
-        response = ask_openai(prompt)
-        st.markdown(response)
+elif topic == "Exercise Technique & Safety":
+    st.subheader("✅ Exercise Technique & Safety")
+    st.markdown("""
+- Correct posture and form for key lifts
+- Spotting techniques and safety protocols
+- Training modifications for injuries or special populations
+""")
 
-# --- TAB 3: Calorie & Macro Calculator ---
-with tabs[2]:
-    st.header("🥗 Calorie & Macro Estimator")
-    weight = st.number_input("Current Weight (kg)", 30.0, 200.0, 70.0)
-    goal_weight = st.number_input("Goal Weight (kg)", 30.0, 200.0, 65.0)
-    weeks = st.slider("Weeks to reach goal", 4, 52, 16)
-    activity = st.selectbox("Activity Level", ["Sedentary", "Lightly Active", "Moderately Active"])
+elif topic == "Client Consultations":
+    st.subheader("🗣️ Client Consultations & Behaviour Change")
+    st.markdown("""
+- Pre-screening (PAR-Q, health status)
+- SMART goals and habit formation
+- Motivational interviewing
+- Risk stratification and professional referrals
+""")
 
-    tdee_values = {"Sedentary": 1600, "Lightly Active": 1850, "Moderately Active": 2050}
-    tdee = tdee_values.get(activity, 1850)
-    deficit = 375
-    intake = tdee - deficit
+elif topic == "Training Program Design":
+    st.subheader("📋 Program Design")
+    st.markdown("""
+- FITT and progressive overload
+- Periodisation for different goals
+- Customising for busy professionals and parents
+- Using spreadsheets and data tracking for long-term success
+""")
 
-    p = round(0.3 * intake / 4)
-    c = round(0.4 * intake / 4)
-    f = round(0.3 * intake / 9)
+elif topic == "Calorie & Macro Calculator":
+    st.subheader("🥗 Calorie & Macro Calculator")
+    st.markdown("""
+Lauren supports sustainable weight loss through:
+- Calorie deficit (300–500 kcal/day)
+- High-protein diet (1.6–2.2g/kg BW)
+- Macro balance: Protein ~30–40%, Carbs ~30–40%, Fats ~20–30%
+- Portion control or optional food tracking
 
-    st.markdown(f"**Daily Calories:** {int(intake)} kcal")
-    st.markdown(f"**Protein:** {p} g")
-    st.markdown(f"**Carbohydrates:** {c} g")
-    st.markdown(f"**Fats:** {f} g")
+Includes NEAT tracking, example meal plans, and long-term dietary strategies.
+""")
 
-# --- TAB 4: About Lauren ---
-with tabs[3]:
-    st.header("📋 About Lauren Yates")
-    st.markdown(manual_texts["Lauren Avatar"][:3000])
-    st.markdown("---")
-    st.markdown("Want to become a PT like Lauren? Ask about our training pathways and mentorships.")
+elif topic == "Lauren’s Coaching Style":
+    st.subheader("💡 Lauren’s Coaching Approach")
+    st.markdown("""
+- Tailored online coaching for professionals, parents, and all ages
+- Focus on consistency, accountability, and realistic progress
+- Expertise in injury rehab, post-surgery recovery, and special populations
+- Emphasis on sustainable training habits, sleep, stress management, and progressive overload
+- Weekly check-ins and optional tracking sheets
+""")
 
-# --- FOOTER ---
+elif topic == "About":
+    st.subheader("ℹ️ About Focus Fitness AI")
+    st.markdown("""
+This assistant is designed to support learners and clients of Lauren Yates.
+
+It incorporates Lauren’s strengths in:
+- Post-rehab programming
+- Online fitness coaching
+- Weight loss and body recomposition
+- Holistic training with a long-term mindset
+
+Based on Lauren's Avatar, CV, and client strategies — not ActiveIQ manuals.
+""")
+
+# Footer
 st.markdown("---")
-st.markdown("🧠 Powered by Focus Fitness • Contact: support@focusfitness.co.uk")
+st.markdown("🧠 Powered by Focus Fitness • [Get in touch](mailto:support@focusfitness.co.uk)")
