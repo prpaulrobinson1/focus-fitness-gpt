@@ -5,8 +5,8 @@ import openai
 # Page config
 st.set_page_config(page_title="Lauren's Virtual Coach", layout="centered")
 
-# Use capitalized key to match existing Streamlit secret
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Use OpenAI client (new SDK interface)
+client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.title("🏋️ Lauren’s Virtual Fitness Coach")
 
@@ -24,12 +24,12 @@ if user_input:
 
     try:
         with st.spinner("Thinking like Lauren..."):
-            completion = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=st.session_state.messages,
                 temperature=0.7
             )
-        reply = completion.choices[0].message.content
+        reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
     except Exception as e:
