@@ -1,6 +1,7 @@
 
 import streamlit as st
 import openai
+import time
 
 # Page config
 st.set_page_config(page_title="Lauren's Virtual Coach", layout="centered")
@@ -39,11 +40,17 @@ if user_input:
 
     try:
         with st.spinner("Thinking like Lauren..."):
+            # Limit history to last 12 user+assistant messages plus system
+            trimmed_messages = [st.session_state.messages[0]] + st.session_state.messages[-24:]
+            start_time = time.time()
             response = client.chat.completions.create(
-                model="gpt-4",
-                messages=st.session_state.messages,
+                model="gpt-3.5-turbo",
+                messages=trimmed_messages,
                 temperature=0.7
             )
+            elapsed = time.time() - start_time
+            if elapsed > 20:
+                st.warning("That took a bit longer than usual — GPT may be busy.")
         reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": reply})
         st.rerun()
