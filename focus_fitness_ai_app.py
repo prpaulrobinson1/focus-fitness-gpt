@@ -10,57 +10,58 @@ if 'name' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Title and name input
+# Title and name collection
 st.title("👋 Welcome Lauren’s GPT Assistant!")
+
 if not st.session_state.name:
-    st.session_state.name = st.text_input("Hi, this is Lauren’s Avatar, I am here to help. Who am I speaking to today?")
-    st.stop()
+    with st.form(key="name_form"):
+        name_input = st.text_input("Hi, this is Lauren’s Avatar, I am here to help. Who am I speaking to today?")
+        submit_name = st.form_submit_button("Submit")
+        if submit_name and name_input:
+            st.session_state.name = name_input
 
-st.markdown(f"Nice to see you, **{st.session_state.name}**. How can I help you today?")
+if st.session_state.name:
+    st.markdown(f"Nice to see you, **{st.session_state.name}**. How can I help you today?")
+    question = st.text_input("Ask me anything about training, injury, nutrition, or Lauren’s approach:")
 
-# Question input
-question = st.text_input("Ask me anything about training, injury, nutrition, or Lauren’s approach:")
+    if question:
+        response = ""
+        q = question.lower()
 
-# Process and respond
-if question:
-    response = ""
+        if "squat" in q and "muscle" in q:
+            response = (
+                "A squat primarily works the quadriceps, gluteus maximus, and hamstrings. "
+                "It also engages the erector spinae and core for stability. "
+                "Lauren would remind you to focus on proper knee alignment and neutral spine during execution."
+            )
+        elif "knee injury" in q or ("injury" in q and "knee" in q):
+            response = (
+                "Before suggesting exercises, Lauren would want to know more. "
+                "Is it a ligament, cartilage, tendon, or joint issue? When did it start? Has it been diagnosed? "
+                "Once we know that, we can consider safe movement strategies."
+            )
+        elif "lose weight" in q or "weight loss" in q:
+            response = (
+                "Lauren supports sustainable fat loss through strength training, NEAT, and high-protein eating. "
+                "Would you like to estimate your calorie and macro needs?"
+            )
+        elif "protein" in q:
+            response = (
+                "Lauren typically recommends 1.6–2.2g of protein per kg of body weight for most clients. "
+                "This supports satiety, lean mass retention, and recovery during fat loss or strength training."
+            )
+        elif "hello" in q or "hi" in q:
+            response = f"Hi {st.session_state.name}, how can I support your fitness journey today?"
+        else:
+            response = (
+                "That’s a great question. Lauren would tailor the answer depending on your goals, "
+                "injury history, and lifestyle. Can you tell me a bit more so we can guide you properly?"
+            )
 
-    q = question.lower()
-    if "squat" in q and "muscle" in q:
-        response = (
-            "A squat primarily works the quadriceps, gluteus maximus, and hamstrings. "
-            "It also engages the erector spinae and core for stability. "
-            "Lauren would remind you to focus on proper knee alignment and neutral spine during execution."
-        )
-    elif "knee injury" in q or ("injury" in q and "knee" in q):
-        response = (
-            "Before suggesting exercises, Lauren would want to know more. "
-            "Is it a ligament, cartilage, tendon, or joint issue? When did it start? Has it been diagnosed? "
-            "Once we know that, we can consider safe movement strategies."
-        )
-    elif "lose weight" in q or "weight loss" in q:
-        response = (
-            "Lauren supports sustainable fat loss through strength training, NEAT, and high-protein eating. "
-            "Would you like to estimate your calorie and macro needs?"
-        )
-    elif "protein" in q:
-        response = (
-            "Lauren typically recommends 1.6–2.2g of protein per kg of body weight for most clients. "
-            "This supports satiety, lean mass retention, and recovery during fat loss or strength training."
-        )
-    elif "hello" in q or "hi" in q:
-        response = f"Hi {st.session_state.name}, how can I support your fitness journey today?"
-    else:
-        response = (
-            "That’s a great question. Lauren would tailor the answer depending on your goals, "
-            "injury history, and lifestyle. Can you tell me a bit more so we can guide you properly?"
-        )
+        st.session_state.chat_history.append((question, response))
 
-    st.session_state.chat_history.append((question, response))
-
-# Display chat history
-if st.session_state.chat_history:
-    st.markdown("### 💬 Conversation")
-    for i, (q, r) in enumerate(reversed(st.session_state.chat_history[-5:]), 1):
-        st.markdown(f"**You:** {q}")
-        st.markdown(f"**Lauren’s Avatar:** {r}")
+    if st.session_state.chat_history:
+        st.markdown("### 💬 Conversation")
+        for q, r in reversed(st.session_state.chat_history[-5:]):
+            st.markdown(f"**You:** {q}")
+            st.markdown(f"**Lauren’s Avatar:** {r}")
