@@ -11,6 +11,8 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "show_calculator" not in st.session_state:
     st.session_state.show_calculator = False
+if "last_topic" not in st.session_state:
+    st.session_state.last_topic = ""
 
 # Page Title
 st.title("🤖 Lauren’s Avatar – Your Fitness Assistant")
@@ -21,16 +23,15 @@ if not st.session_state.name:
     if name_input:
         st.session_state.name = name_input.strip()
         st.success(f"Welcome {st.session_state.name}! You can now start chatting below.")
-        st.stop()
-else:
+
+# Chat interface (only shows once name is set)
+if st.session_state.name:
     st.markdown(f"👋 Hi **{st.session_state.name}**, how can I support your training, nutrition, or recovery today?")
 
-    # Chat input
     with st.form("chat_input_form"):
         user_input = st.text_input("Your message:", key="input")
         send = st.form_submit_button("Send")
 
-    # Process message
     if send and user_input:
         user_message = user_input.strip().lower()
         response = ""
@@ -40,34 +41,59 @@ else:
                 "Squats work your quads, glutes, hamstrings, and core. "
                 "Lauren would remind you to keep your knees tracking over your toes and maintain a neutral spine."
             )
-        elif any(word in user_message for word in ["meniscus", "knee injury", "knee problem", "knee pain"]):
+            st.session_state.last_topic = "squat"
+
+        elif any(word in user_message for word in ["meniscus", "knee injury", "knee problem", "knee pain", "knee"]):
             response = (
                 "Lauren would want to know: Is this a tear, inflammation, or undiagnosed? "
                 "When did the pain begin? Are you experiencing clicking, swelling, or locking? "
                 "Once you clarify, we can explore movement strategies or modifications."
             )
+            st.session_state.last_topic = "knee"
+
+        elif "tear" in user_message and st.session_state.last_topic == "knee":
+            response = (
+                "That helps — if it’s a meniscus or ligament tear, Lauren would focus on restoring range of motion, "
+                "avoiding twisting motions, and supporting joint stability. "
+                "Has a physio given you exercises or are you waiting for imaging results?"
+            )
+
         elif any(word in user_message for word in ["protein", "macros", "calories", "calculate", "intake"]):
             response = (
                 "Sure! Let's estimate your daily calorie and macro targets. Please scroll down and fill in the calculator."
             )
             st.session_state.show_calculator = True
+            st.session_state.last_topic = "nutrition"
+
         elif any(word in user_message for word in ["lose weight", "fat loss"]):
             response = (
                 "For fat loss, Lauren focuses on strength training, NEAT (daily movement), and high-protein intake. "
                 "Would you like help setting your intake targets?"
             )
+            st.session_state.last_topic = "fat loss"
+
         elif "injury" in user_message:
             response = (
                 "Can you tell me more about the injury? Lauren would want to know when it started, "
                 "what aggravates it, and if a diagnosis was given before advising next steps."
             )
+            st.session_state.last_topic = "injury"
+
         elif "hello" in user_message or "hi" in user_message:
             response = f"Hi {st.session_state.name}, I’m here to support your fitness journey. Ask me anything!"
+            st.session_state.last_topic = "greeting"
+
         else:
-            response = (
-                f"Thanks for your message, {st.session_state.name}. "
-                "Tell me more about your goal or situation so I can tailor Lauren’s advice for you."
-            )
+            if st.session_state.last_topic == "knee" and "pain" in user_message:
+                response = (
+                    "Understood. With ongoing knee pain, Lauren would recommend temporarily avoiding deep flexion movements, "
+                    "and might suggest quad activation work, glute bridges, or cycling if pain-free. Would you like movement suggestions?"
+                )
+            else:
+                response = (
+                    f"Thanks for your message, {st.session_state.name}. "
+                    "Tell me more about your goal or situation so I can tailor Lauren’s advice for you."
+                )
 
         st.session_state.chat_history.append(("You", user_input.strip()))
         st.session_state.chat_history.append(("Lauren’s Avatar", response))
