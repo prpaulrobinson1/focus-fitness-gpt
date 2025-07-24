@@ -1,103 +1,66 @@
 
 import streamlit as st
 
-def calculate_tdee(weight, height, age, sex, activity_level):
-    if sex == 'Male':
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5
-    else:
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161
-
-    activity_multipliers = {
-        'Sedentary': 1.2,
-        'Lightly Active': 1.375,
-        'Moderately Active': 1.55,
-        'Very Active': 1.725
-    }
-
-    tdee = bmr * activity_multipliers[activity_level]
-    return round(tdee, 2)
-
-def calculate_macros(calories):
-    protein = round((0.3 * calories) / 4)
-    fat = round((0.3 * calories) / 9)
-    carbs = round((0.4 * calories) / 4)
-    return protein, fat, carbs
-
+# Set page config
 st.set_page_config(page_title="Lauren's GPT Assistant", layout="centered")
 
+# Session state for name and chat history
+if 'name' not in st.session_state:
+    st.session_state.name = ""
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+
+# Title and name input
 st.title("👋 Welcome Lauren’s GPT Assistant!")
-st.markdown("Hi, this is Lauren’s Avatar, I am here to help. Who am I speaking to today?")
+if not st.session_state.name:
+    st.session_state.name = st.text_input("Hi, this is Lauren’s Avatar, I am here to help. Who am I speaking to today?")
+    st.stop()
 
-menu = st.selectbox("What would you like help with?", [
-    "Ask a Fitness Question",
-    "Report an Injury",
-    "Get Nutrition Guidance",
-    "Live Calorie & Macro Calculator",
-    "Learn About Lauren’s Coaching",
-    "Exit"
-])
+st.markdown(f"Nice to see you, **{st.session_state.name}**. How can I help you today?")
 
-if menu == "Live Calorie & Macro Calculator":
-    st.subheader("🔢 Calorie & Macro Calculator")
+# Question input
+question = st.text_input("Ask me anything about training, injury, nutrition, or Lauren’s approach:")
 
-    sex = st.selectbox("Sex", ["Female", "Male"])
-    age = st.number_input("Age", 18, 99, 40)
-    height = st.number_input("Height (cm)", 140, 220, 167)
-    weight = st.number_input("Current Weight (kg)", 40.0, 200.0, 64.0)
-    goal_weight = st.number_input("Goal Weight (kg)", 40.0, 200.0, 59.0)
-    activity = st.selectbox("Activity Level", ["Sedentary", "Lightly Active", "Moderately Active", "Very Active"])
-    timeframe = st.slider("Goal Timeframe (weeks)", 4, 52, 16)
+# Process and respond
+if question:
+    response = ""
 
-    if st.button("Calculate My Targets"):
-        tdee = calculate_tdee(weight, height, age, sex, activity)
-        deficit = 375
-        target_calories = tdee - deficit
-        protein, fat, carbs = calculate_macros(target_calories)
-
-        st.success(f"Estimated TDEE: {tdee} kcal/day")
-        st.success(f"Calorie Target for Weight Loss: {target_calories} kcal/day")
-        st.markdown(f"**Daily Macros:** Protein: {protein}g, Carbs: {carbs}g, Fat: {fat}g")
-
-if menu == "Get Nutrition Guidance":
-    st.subheader("🥗 Nutrition Guidance")
-    goal = st.radio("What's your main goal?", ["Lose weight", "Build muscle", "Improve energy", "Not sure yet"])
-    tracking = st.checkbox("Would you like to use the calorie/macro calculator?")
-    if goal == "Lose weight":
-        st.markdown("Lauren focuses on realistic fat loss through strength training, NEAT, and flexible eating — not rigid calorie tracking.")
-        if tracking:
-            st.markdown("You can use the **Live Calorie Calculator** above to get tailored calorie and macro guidance.")
+    q = question.lower()
+    if "squat" in q and "muscle" in q:
+        response = (
+            "A squat primarily works the quadriceps, gluteus maximus, and hamstrings. "
+            "It also engages the erector spinae and core for stability. "
+            "Lauren would remind you to focus on proper knee alignment and neutral spine during execution."
+        )
+    elif "knee injury" in q or ("injury" in q and "knee" in q):
+        response = (
+            "Before suggesting exercises, Lauren would want to know more. "
+            "Is it a ligament, cartilage, tendon, or joint issue? When did it start? Has it been diagnosed? "
+            "Once we know that, we can consider safe movement strategies."
+        )
+    elif "lose weight" in q or "weight loss" in q:
+        response = (
+            "Lauren supports sustainable fat loss through strength training, NEAT, and high-protein eating. "
+            "Would you like to estimate your calorie and macro needs?"
+        )
+    elif "protein" in q:
+        response = (
+            "Lauren typically recommends 1.6–2.2g of protein per kg of body weight for most clients. "
+            "This supports satiety, lean mass retention, and recovery during fat loss or strength training."
+        )
+    elif "hello" in q or "hi" in q:
+        response = f"Hi {st.session_state.name}, how can I support your fitness journey today?"
     else:
-        st.markdown("Lauren encourages a high-protein foundation, adequate carbs for training, and healthy fats — tailored to lifestyle and preferences.")
+        response = (
+            "That’s a great question. Lauren would tailor the answer depending on your goals, "
+            "injury history, and lifestyle. Can you tell me a bit more so we can guide you properly?"
+        )
 
-elif menu == "Ask a Fitness Question":
-    st.subheader("💬 Ask a Fitness Question")
-    question = st.text_input("Type your question here:")
-    if question:
-        st.write("Thanks! Lauren would say that every good answer starts with understanding your goals. Here's a starting point:")
-        st.markdown("- If your question involves weight loss, training plans, or plateaus, Lauren may gently suggest a calorie and macro check.")
-        st.markdown("- For strength or rehab, Lauren emphasizes progressive overload and tailored movement.")
+    st.session_state.chat_history.append((question, response))
 
-elif menu == "Report an Injury":
-    st.subheader("🩹 Injury Reporting")
-    area = st.selectbox("Which area is injured?", ["Knee", "Shoulder", "Back", "Hip", "Other"])
-    details = st.text_area("Please describe the issue in detail (when it began, what makes it worse, any medical advice received, etc.)")
-    if details:
-        st.markdown("Thanks for explaining. Lauren would ask:")
-        st.markdown("- Has it been diagnosed by a medical professional?")
-        st.markdown("- Are you currently able to bear weight or move the area?")
-        st.markdown("- Have you had this injury before?")
-
-elif menu == "Learn About Lauren’s Coaching":
-    st.subheader("💡 Lauren’s Coaching Philosophy")
-    st.markdown("""
-Lauren helps busy professionals, parents, and older adults build sustainable fitness habits. Her focus is on:
-- Tailored strength training with progressive overload
-- Adapting around injuries or medical history
-- Weekly check-ins and structured tracking (spreadsheet-based)
-- Combining movement, mindset, recovery, and nutrition without pressure
-
-She avoids extremes and encourages long-term health over quick fixes. From post-surgery recovery to elite professionals — Lauren’s seen it all.
-""")
-
-elif menu == "Exit":
-    st.write("Thanks for visiting. Lauren and I are here whenever you're ready!")
+# Display chat history
+if st.session_state.chat_history:
+    st.markdown("### 💬 Conversation")
+    for i, (q, r) in enumerate(reversed(st.session_state.chat_history[-5:]), 1):
+        st.markdown(f"**You:** {q}")
+        st.markdown(f"**Lauren’s Avatar:** {r}")
